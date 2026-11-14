@@ -1,0 +1,26 @@
+# Entorno Python / uv
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+dist/
+build/
+*.egg-info/
+
+# uv.lock SÍ se versiona (reproducibilidad de la app) — no lo ignores aquí.
+
+# Datos generados por GestCorp 98 (se regeneran con seed_data.py)
+data/*.sqlite3
+data/*.db
+
+# Editor / OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+
+# Logs
+*.log
