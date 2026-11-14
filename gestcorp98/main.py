@@ -13,12 +13,11 @@ def main() -> None:
     root = tk.Tk()
     root.title(config.APP_TITLE)
     root.configure(bg=config.BG_COLOR)
-    root.geometry("420x260")
+    root.state("zoomed")
 
     def on_login_success() -> None:
         for widget in root.winfo_children():
             widget.destroy()
-        root.geometry("900x600")
         MainWindow(root, conn).pack(fill="both", expand=True)
 
     LoginFrame(root, on_success=on_login_success).pack(fill="both", expand=True)
