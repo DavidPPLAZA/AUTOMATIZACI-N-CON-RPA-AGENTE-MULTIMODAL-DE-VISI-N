@@ -1,0 +1,36 @@
+{
+  "01_login.png": {
+    "usuario_field": [
+      272,
+      138
+    ],
+    "contraseña_field": [
+      272,
+      188
+    ],
+    "entrar_button": [
+      208,
+      274
+    ]
+  },
+  "02_alta_cliente.png": {
+    "nombre_field": [
+      219,
+      1399
+    ],
+    "nif_field": [
+      525,
+      1399
+    ],
+    "anadir_button": [
+      475,
+      1483
+    ]
+  },
+  "03_popup_validacion.png": {
+    "popup_aceptar_button": [
+      1397,
+      888
+    ]
+  }
+}
