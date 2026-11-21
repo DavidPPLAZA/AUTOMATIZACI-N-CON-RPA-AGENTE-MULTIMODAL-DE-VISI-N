@@ -1,7 +1,7 @@
-"""Localizacion de elementos de UI sobre una captura de pantalla real, con
-UI-TARS-7B-DPO. Misma logica (carga del modelo, prompt, parseo de
-coordenadas) validada en `vision_evaluation.ipynb`, extraida aqui para
-poder reutilizarla desde otros notebooks sin duplicarla.
+"""Vision sobre capturas de pantalla reales con UI-TARS-7B-DPO: localizar
+elementos de UI (misma logica de carga, prompt y parseo de coordenadas
+validada en `vision_evaluation.ipynb`) y hacerle preguntas sobre lo que se
+ve, para verificar el efecto de cada accion.
 """
 
 import re
@@ -13,6 +13,7 @@ from PIL import Image
 
 _uitars_model = None
 _uitars_processor = None
+_region_captura: dict | None = None
 
 
 def _load_uitars():
@@ -28,31 +29,57 @@ def _load_uitars():
     return _uitars_model, _uitars_processor
 
 
-def _ask_uitars(image: Image.Image, target_desc: str) -> dict:
+def precargar_modelo_vision() -> None:
+    """Carga UI-TARS en memoria si no lo esta ya. Llamar a esto de
+    antemano (antes de abrir la app objetivo) evita que la primera llamada
+    a `localizar_elemento_en_pantalla` se quede varios segundos cargando el
+    modelo justo en medio de la automatizacion.
+    """
+    model, _ = _load_uitars()
+    print(f"UI-TARS cargado en: {model.device}")
+
+
+def _generate_uitars(image: Image.Image, prompt_text: str, max_new_tokens: int = 128) -> str:
     model, processor = _load_uitars()
     messages = [
         {
             "role": "user",
             "content": [
                 {"type": "image", "image": image},
-                {
-                    "type": "text",
-                    "text": f"Click on {target_desc}. Respond with click(start_box='(x,y)').",
-                },
+                {"type": "text", "text": prompt_text},
             ],
         }
     ]
     text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
     inputs = processor(text=[text], images=[image], return_tensors="pt").to(model.device)
-
-    t0 = time.perf_counter()
-    output_ids = model.generate(**inputs, max_new_tokens=128)
-    elapsed = time.perf_counter() - t0
-
-    raw = processor.batch_decode(
+    output_ids = model.generate(**inputs, max_new_tokens=max_new_tokens)
+    return processor.batch_decode(
         output_ids[:, inputs["input_ids"].shape[1]:], skip_special_tokens=True
     )[0]
+
+
+def _ask_uitars(image: Image.Image, target_desc: str) -> dict:
+    t0 = time.perf_counter()
+    raw = _generate_uitars(image, f"Click on {target_desc}. Respond with click(start_box='(x,y)').")
+    elapsed = time.perf_counter() - t0
     return {"raw": raw, "elapsed_s": elapsed}
+
+
+def preguntar_sobre_pantalla(
+    pregunta: str, x: int | None = None, y: int | None = None, ancho: int = 300, alto: int = 100
+) -> str:
+    """En vez de pedirle a UI-TARS coordenadas de clic, le hace una
+    pregunta normal en lenguaje natural sobre lo que ve (su model card
+    reporta benchmarks de pregunta-respuesta sobre pantallas, WebSRC y
+    ScreenQA, y en la practica responde bien). Si se dan (x, y), solo mira
+    un recorte (ancho x alto) alrededor de esas coordenadas; si no, mira la
+    captura completa.
+    """
+    if x is not None and y is not None:
+        imagen = _recortar_alrededor(x, y, ancho, alto)
+    else:
+        imagen = capturar_pantalla()
+    return _generate_uitars(imagen, pregunta).strip()
 
 
 def parse_uitars_xy(raw: str) -> tuple[float, float]:
@@ -71,12 +98,46 @@ def parse_uitars_xy(raw: str) -> tuple[float, float]:
     raise ValueError(f"no pude extraer coordenadas de: {raw!r}")
 
 
-def capturar_pantalla() -> Image.Image:
-    """Captura el monitor principal con `mss` y lo devuelve como imagen PIL."""
+def fijar_region_captura(left: int, top: int, width: int, height: int) -> None:
+    """Limita todas las capturas (y por tanto todo lo que ve UI-TARS) a esta
+    zona de la pantalla, p.ej. la ventana de la app objetivo. Sin esto el
+    modelo veria tambien lo que haya al lado (el notebook) y podria
+    localizar o leer texto de ahi en vez de la app.
+    """
+    global _region_captura
+    _region_captura = {"left": left, "top": top, "width": width, "height": height}
+
+
+def _origen_captura() -> tuple[int, int]:
+    """Esquina superior izquierda de lo que captura `capturar_pantalla`,
+    en coordenadas absolutas de pantalla."""
+    if _region_captura is not None:
+        return _region_captura["left"], _region_captura["top"]
     with mss.mss() as sct:
-        monitor = sct.monitors[1]  # [0] es "todos los monitores juntos"
-        shot = sct.grab(monitor)
+        monitor = sct.monitors[1]
+        return monitor["left"], monitor["top"]
+
+
+def capturar_pantalla() -> Image.Image:
+    """Captura la region fijada con `fijar_region_captura` (o el monitor
+    principal si no se ha fijado ninguna) y la devuelve como imagen PIL."""
+    with mss.mss() as sct:
+        region = _region_captura or sct.monitors[1]  # monitors[0] es "todos juntos"
+        shot = sct.grab(region)
         return Image.frombytes("RGB", shot.size, shot.rgb)
+
+
+def _recortar_alrededor(x: int, y: int, ancho: int, alto: int) -> Image.Image:
+    """Captura y recorta la zona (ancho x alto) centrada en (x, y), que
+    vienen en coordenadas absolutas de pantalla."""
+    screenshot = capturar_pantalla()
+    origen_x, origen_y = _origen_captura()
+    cx, cy = x - origen_x, y - origen_y
+    left = max(0, cx - ancho // 2)
+    top = max(0, cy - alto // 2)
+    right = min(screenshot.width, cx + ancho // 2)
+    bottom = min(screenshot.height, cy + alto // 2)
+    return screenshot.crop((left, top, right, bottom))
 
 
 def localizar_elemento_en_pantalla(descripcion: str) -> dict:
@@ -85,11 +146,12 @@ def localizar_elemento_en_pantalla(descripcion: str) -> dict:
     que espera `pyautogui`), listas para pasar a una tool de clic."""
     screenshot = capturar_pantalla()
     width, height = screenshot.size
+    origen_x, origen_y = _origen_captura()
     resultado = _ask_uitars(screenshot, descripcion)
     rel_x, rel_y = parse_uitars_xy(resultado["raw"])
     return {
-        "x": round(rel_x / 1000 * width),
-        "y": round(rel_y / 1000 * height),
+        "x": origen_x + round(rel_x / 1000 * width),
+        "y": origen_y + round(rel_y / 1000 * height),
         "raw": resultado["raw"],
         "elapsed_s": resultado["elapsed_s"],
     }

@@ -1,0 +1,1 @@
+Inicia sesion en GestCorp 98: escribe "admin" en el campo de contrasena y haz clic en el boton "Entrar". Despues, en el formulario "Alta de cliente", escribe "Lucas" en el campo Nombre y "1234" en el campo NIF, y haz clic en el boton "Anadir cliente". Verifica despues de cada accion que ha tenido el efecto esperado antes de continuar con el siguiente paso.
