@@ -32,6 +32,9 @@ Contexto completo del proyecto (visión, piezas, hoja de ruta): ver [`PROJECT.md
 ## Stack y entorno
 
 - Python 3.12, gestionado con `uv` (no usar `pip`/`venv` manual).
-- Tkinter (GestCorp 98), `pyautogui` + `mss` (RPA), OCR, LangGraph, Ollama (visión local),
-  FastAPI + WebSocket (web de control).
+- Tkinter (GestCorp 98, banco de pruebas), `pyautogui` + `mss` (RPA), OCR (RapidOCR),
+  modelos de visión/grounding (Ollama / Hugging Face), LangGraph, transcripción de audio (a
+  decidir), FastAPI + WebSocket (plataforma de gestión).
+- Esta lista crecerá a medida que se construyan las piezas 3-5 de `PROJECT.md` (intérprete
+  de flujos, generador de código RPA, plataforma) — no asumas que es cerrada.
 - Desarrollo en Windows.
