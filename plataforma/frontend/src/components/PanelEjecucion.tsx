@@ -1,15 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { CheckCircle2, ChevronDown, CircleStop, Loader2, TerminalSquare, XCircle } from "lucide-react";
-import { api, type Evento } from "@/lib/api";
+import { useEffect, useRef } from "react";
+import type { Evento } from "@/lib/api";
 import { useEjecucion } from "@/lib/useEjecucion";
-import { Boton, Etiqueta, LineaPaso, Tarjeta } from "./ui";
+import { LineaPaso, Tarjeta } from "./ui";
+import { CabeceraEjecucion, Consola, Errores, Metrica } from "./ejecucion";
 
-// Muestra una ejecucion en tiempo real: progreso, linea de tiempo y consola.
+// Muestra la ejecucion de un robot en tiempo real: progreso, pasos y consola.
 export default function PanelEjecucion({ id }: { id: string }) {
   const { eventos, terminada, estadoFinal } = useEjecucion(id);
-  const [consolaAbierta, setConsolaAbierta] = useState(false);
   const finLista = useRef<HTMLDivElement>(null);
 
   const inicio = eventos.find((e) => e.tipo === "inicio");
@@ -26,28 +25,12 @@ export default function PanelEjecucion({ id }: { id: string }) {
 
   return (
     <Tarjeta className="aparecer flex flex-col gap-5">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5">
-          {!terminada ? (
-            <Loader2 size={18} className="animate-spin text-cian" />
-          ) : estadoFinal === "ok" ? (
-            <CheckCircle2 size={18} className="text-bien" />
-          ) : (
-            <XCircle size={18} className="text-mal" />
-          )}
-          <div>
-            <p className="text-sm font-medium">
-              {!terminada ? "Ejecutando…" : estadoFinal === "ok" ? "Completado" : estadoFinal === "detenida" ? "Detenido" : "Ha fallado"}
-            </p>
-            {inicio?.tipo === "inicio" && inicio.titulo && <p className="text-xs text-tenue">{inicio.titulo}</p>}
-          </div>
-        </div>
-        {!terminada && (
-          <Boton variante="peligro" onClick={() => api.detener(id).catch(() => {})}>
-            <CircleStop size={15} /> Detener
-          </Boton>
-        )}
-      </div>
+      <CabeceraEjecucion
+        id={id}
+        terminada={terminada}
+        estadoFinal={estadoFinal}
+        subtitulo={inicio?.tipo === "inicio" ? inicio.titulo : undefined}
+      />
 
       <div className="grid grid-cols-3 gap-2 text-center">
         <Metrica valor={`${hechos.size}/${total || "–"}`} texto="pasos" />
@@ -73,37 +56,8 @@ export default function PanelEjecucion({ id }: { id: string }) {
         <div ref={finLista} />
       </div>
 
-      {errores.map((e, i) => (
-        <div key={i} className="rounded-xl border border-mal/40 bg-mal/10 px-3 py-2 font-mono text-xs text-mal">
-          {"texto" in e ? e.texto : ""}
-        </div>
-      ))}
-
-      <div className="rounded-xl border border-borde">
-        <button
-          onClick={() => setConsolaAbierta((v) => !v)}
-          className="flex w-full items-center justify-between px-3 py-2 text-xs text-tenue hover:text-texto"
-        >
-          <span className="flex items-center gap-2">
-            <TerminalSquare size={14} /> Consola <Etiqueta>{eventos.length} eventos</Etiqueta>
-          </span>
-          <ChevronDown size={14} className={`transition-transform ${consolaAbierta ? "rotate-180" : ""}`} />
-        </button>
-        {consolaAbierta && (
-          <pre className="max-h-64 overflow-auto border-t border-borde bg-black/40 p-3 font-mono text-[11px] leading-relaxed text-tenue">
-            {eventos.map((e) => `[${e.t.toFixed(2).padStart(6)}s] ${JSON.stringify(e)}`).join("\n")}
-          </pre>
-        )}
-      </div>
+      <Errores eventos={eventos} />
+      <Consola eventos={eventos} />
     </Tarjeta>
-  );
-}
-
-function Metrica({ valor, texto, color }: { valor: string; texto: string; color?: string }) {
-  return (
-    <div className="rounded-xl border border-borde bg-panel py-2">
-      <p className={`font-mono text-lg font-semibold ${color ?? ""}`}>{valor}</p>
-      <p className="text-[11px] uppercase tracking-wider text-tenue">{texto}</p>
-    </div>
   );
 }

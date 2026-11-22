@@ -45,6 +45,13 @@ export type Evento = { t: number } & (
   | { tipo: "inicio"; modo: "robot" | "agente"; titulo?: string; total?: number }
   | { tipo: "paso"; indice: number; total: number; accion: Paso["accion"]; elemento: string; texto?: string | null; x: number; y: number }
   | { tipo: "paso_ok"; indice: number }
+  // del agente: herramienta que llama, lo que le devuelve, lo que lee UI-TARS
+  // al verificar, lo que escribe el LLM y el robot que se guarda al terminar
+  | { tipo: "tool"; nombre: string; args: Record<string, unknown> }
+  | { tipo: "tool_resultado"; nombre: string; texto: string }
+  | { tipo: "lectura"; frase: string; respuesta: string }
+  | { tipo: "texto_agente"; texto: string }
+  | { tipo: "robot_guardado"; id: string }
   | { tipo: "mensaje"; texto: string }
   | { tipo: "error"; texto: string }
   | { tipo: "fin"; estado: ResumenEjecucion["estado"] }
@@ -79,12 +86,18 @@ export const api = {
   promptEjemplo: () => pedir<{ prompt: string }>("/prompt-ejemplo"),
   flujos: () => pedir<ResumenFlujo[]>("/flujos"),
   flujo: (id: string) => pedir<Flujo>(`/flujos/${encodeURIComponent(id)}`),
+  borrarFlujo: (id: string) => pedir<{ ok: boolean }>(`/flujos/${encodeURIComponent(id)}`, { method: "DELETE" }),
   ejecutarRobot: (flujo: string) =>
     pedir<ResumenEjecucion>("/ejecuciones/robot", { method: "POST", body: JSON.stringify({ flujo }) }),
   lanzarAgente: (prompt: string) =>
     pedir<ResumenEjecucion>("/ejecuciones/agente", { method: "POST", body: JSON.stringify({ prompt }) }),
   detener: (id: string) => pedir<ResumenEjecucion>(`/ejecuciones/${id}/detener`, { method: "POST" }),
 };
+
+// Borrar un robot elimina su JSON del disco: no se puede deshacer, asi que se pregunta antes.
+export function confirmarBorrado(titulo: string, fecha: string | null): boolean {
+  return window.confirm(`¿Eliminar el robot «${titulo}» (${formatearFecha(fecha)})?\n\nSe borra su archivo y no se puede deshacer.`);
+}
 
 export function formatearFecha(iso: string | null): string {
   if (!iso) return "sin fecha";

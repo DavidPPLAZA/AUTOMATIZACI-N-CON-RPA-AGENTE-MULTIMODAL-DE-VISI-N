@@ -24,14 +24,19 @@ npm run dev
 ```
 
 Pon el navegador en la mitad izquierda de la pantalla: GestCorp 98 se abre en la derecha
-(`LADO_GESTCORP` en `backend/config.py`). Mientras se ejecuta un robot, el ratón es suyo.
+(`LADO_GESTCORP` en `agente/config.py`). Mientras trabaja el agente o un robot, el ratón es suyo.
 
 ## Estado
 
-- **Robots:** funcionan de verdad. Lee los flujos de `experiments/flujos/`, los reproduce con
-  pyautogui y manda cada paso por WebSocket.
-- **Agente:** la interfaz está montada, pero `POST /ejecuciones/agente` responde 501. El
-  agente sigue en `experiments/agentic_pipeline.ipynb` hasta que esté pulido.
+El backend no tiene lógica propia de automatización: todo lo que mueve GestCorp 98 está en
+el paquete [`agente/`](../agente) (el notebook `experiments/agentic_pipeline.ipynb` pasado a
+módulos). El backend lo lanza en un hilo y reenvía sus eventos por WebSocket.
+
+- **Agente (Estudio):** pegas el prompt y pulsas «Lanzar agente». Carga UI-TARS (solo la
+  primera vez), abre GestCorp, ejecuta y verifica con sus tools y, si termina, guarda el
+  robot en `experiments/flujos/`. En la web se ve en directo qué razona, qué herramienta
+  usa y qué lee UI-TARS al verificar.
+- **Robots:** reproducen un flujo guardado con pyautogui (`agente/reproductor.py`), sin IA.
 
 ## Mascota 3D de la portada (el perezoso)
 
@@ -81,7 +86,8 @@ Pon el navegador en la mitad izquierda de la pantalla: GestCorp 98 se abre en la
 | GET | `/estado` | backend vivo, agente conectado, ejecución activa |
 | GET | `/prompt-ejemplo` | prompt que se precarga en el Estudio |
 | GET | `/flujos`, `/flujos/{id}` | robots guardados |
+| DELETE | `/flujos/{id}` | borra un robot (su JSON) |
 | POST | `/ejecuciones/robot` `{flujo}` | ejecuta un robot (409 si ya hay una ejecución) |
-| POST | `/ejecuciones/agente` `{prompt}` | lanza el agente (aún no: 501) |
+| POST | `/ejecuciones/agente` `{prompt}` | lanza el agente (409 si ya hay una ejecución) |
 | POST | `/ejecuciones/{id}/detener` | para la ejecución en el siguiente paso |
-| WS | `/ws/ejecuciones/{id}` | eventos en tiempo real: `inicio`, `paso`, `paso_ok`, `mensaje`, `error`, `fin` |
+| WS | `/ws/ejecuciones/{id}` | eventos en tiempo real: `inicio`, `mensaje`, `error`, `fin`; del robot `paso`, `paso_ok`; del agente `tool`, `tool_resultado`, `lectura`, `texto_agente`, `robot_guardado` |

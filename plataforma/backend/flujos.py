@@ -1,10 +1,10 @@
-"""Lectura de los robots (flujos RPA en JSON) guardados en disco."""
+"""Lectura y borrado de los robots (flujos RPA en JSON) guardados en disco."""
 
 import json
 import re
 from pathlib import Path
 
-from plataforma.backend import config
+from agente.config import DIR_FLUJOS
 
 
 def _titulo(instruccion: str, id_flujo: str) -> str:
@@ -20,7 +20,7 @@ def _ruta(id_flujo: str) -> Path:
     # el id es el nombre del fichero sin extension; nada de rutas
     if not re.fullmatch(r"[\w\-]+", id_flujo):
         raise FileNotFoundError(id_flujo)
-    ruta = config.DIR_FLUJOS / f"{id_flujo}.json"
+    ruta = DIR_FLUJOS / f"{id_flujo}.json"
     if not ruta.is_file():
         raise FileNotFoundError(id_flujo)
     return ruta
@@ -40,10 +40,10 @@ def cargar(id_flujo: str) -> dict:
 
 
 def listar() -> list[dict]:
-    if not config.DIR_FLUJOS.is_dir():
+    if not DIR_FLUJOS.is_dir():
         return []
     flujos = []
-    for ruta in config.DIR_FLUJOS.glob("*.json"):
+    for ruta in DIR_FLUJOS.glob("*.json"):
         try:
             f = cargar(ruta.stem)
         except (ValueError, KeyError):
@@ -51,3 +51,8 @@ def listar() -> list[dict]:
         flujos.append({k: f[k] for k in ("id", "titulo", "fecha")} | {"n_pasos": len(f["pasos"])})
     # los mas recientes primero (sin fecha, al final)
     return sorted(flujos, key=lambda f: f["fecha"] or "", reverse=True)
+
+
+def borrar(id_flujo: str) -> None:
+    """Borra el fichero del robot. No se puede deshacer."""
+    _ruta(id_flujo).unlink()

@@ -1,15 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Download, Zap } from "lucide-react";
-import { api, API, ErrorApi, formatearFecha, type Flujo } from "@/lib/api";
+import { ArrowLeft, Download, Trash2, Zap } from "lucide-react";
+import { api, API, confirmarBorrado, ErrorApi, formatearFecha, type Flujo } from "@/lib/api";
 import { Boton, Etiqueta, LineaPaso, Tarjeta } from "@/components/ui";
 import PanelEjecucion from "@/components/PanelEjecucion";
 
 export default function DetalleRobot() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const [flujo, setFlujo] = useState<Flujo | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [ejecucion, setEjecucion] = useState<string | null>(null);
@@ -24,6 +25,16 @@ export default function DetalleRobot() {
     try {
       const e = await api.ejecutarRobot(id);
       setEjecucion(e.id);
+    } catch (e) {
+      setError((e as ErrorApi).message);
+    }
+  }
+
+  async function borrar() {
+    if (!flujo || !confirmarBorrado(flujo.titulo, flujo.fecha)) return;
+    try {
+      await api.borrarFlujo(id);
+      router.push("/robots");
     } catch (e) {
       setError((e as ErrorApi).message);
     }
@@ -55,6 +66,9 @@ export default function DetalleRobot() {
                 <Download size={15} /> JSON
               </Boton>
             </a>
+            <Boton variante="peligro" onClick={borrar} className="ml-auto">
+              <Trash2 size={15} /> Eliminar
+            </Boton>
           </div>
         </>
       )}

@@ -1,4 +1,4 @@
-"""Ejecuciones (de un robot, y mas adelante del agente) y su stream de eventos.
+"""Ejecuciones (de un robot o del agente) y su stream de eventos.
 
 Una ejecucion corre en un hilo aparte (pyautogui bloquea) y va publicando
 eventos. Cada cliente WebSocket se suscribe y recibe primero los eventos que

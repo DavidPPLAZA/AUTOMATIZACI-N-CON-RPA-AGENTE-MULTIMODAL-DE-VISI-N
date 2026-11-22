@@ -1,24 +1,21 @@
-"""API de la plataforma: robots, ejecuciones y stream de eventos en tiempo real.
+"""API de la plataforma: lanzar el agente y los robots, y stream de eventos en
+tiempo real. Todo lo que mueve GestCorp 98 vive en el paquete `agente`; aqui
+solo se lanza en un hilo y se reenvia lo que cuenta a la web.
 
 Arrancar (desde la raiz del repo):
     uv run uvicorn plataforma.backend.main:app --port 8000
 """
 
-import ctypes
+# importar `agente` lo primero: al importarse fija el "DPI awareness" de
+# Windows, que tiene que ir antes de que nadie use pyautogui/mss
+from agente import eventos, reproductor, sesion
 
-# Igual que en el notebook: sin "DPI aware", las coordenadas de pyautogui no
-# coinciden con los pixeles reales. Tiene que ir antes de importar pyautogui.
-try:
-    ctypes.windll.shcore.SetProcessDpiAwareness(1)
-except Exception:
-    pass
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect  # noqa: E402
-from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
-from pydantic import BaseModel  # noqa: E402
-
-from plataforma.backend import config, flujos, robot  # noqa: E402
-from plataforma.backend.ejecuciones import EjecucionEnCurso, gestor  # noqa: E402
+from plataforma.backend import config, flujos
+from plataforma.backend.ejecuciones import Ejecucion, EjecucionEnCurso, gestor
 
 app = FastAPI(title="Automatizando la automatización")
 app.add_middleware(
@@ -34,7 +31,7 @@ def estado():
     activa = gestor.activa
     return {
         "ok": True,
-        "agente_conectado": False,
+        "agente_conectado": True,
         "ejecucion_activa": activa.resumen() if activa and activa.estado == "en_curso" else None,
     }
 
@@ -60,6 +57,32 @@ def ver_flujo(id_flujo: str):
         raise HTTPException(404, "No existe ese robot")
 
 
+@app.delete("/flujos/{id_flujo}")
+def borrar_flujo(id_flujo: str):
+    try:
+        flujos.borrar(id_flujo)
+    except FileNotFoundError:
+        raise HTTPException(404, "No existe ese robot")
+    return {"ok": True}
+
+
+def _lanzar(modo: str, trabajo) -> dict:
+    """Lanza `trabajo(ejecucion)` en un hilo con los eventos del paquete
+    `agente` redirigidos a esa ejecucion (y de ahi al WebSocket)."""
+
+    def con_eventos(ejecucion: Ejecucion) -> None:
+        eventos.fijar_emisor(ejecucion.emitir)
+        try:
+            trabajo(ejecucion)
+        finally:
+            eventos.fijar_emisor(eventos.imprimir)
+
+    try:
+        return gestor.lanzar(modo, con_eventos).resumen()
+    except EjecucionEnCurso:
+        raise HTTPException(409, "Ya hay una ejecución en marcha: solo hay un ratón.")
+
+
 class PeticionRobot(BaseModel):
     flujo: str
 
@@ -70,11 +93,13 @@ def ejecutar_robot(peticion: PeticionRobot):
         flujo = flujos.cargar(peticion.flujo)
     except FileNotFoundError:
         raise HTTPException(404, "No existe ese robot")
-    try:
-        ejecucion = gestor.lanzar("robot", lambda e: robot.ejecutar(flujo, e))
-    except EjecucionEnCurso:
-        raise HTTPException(409, "Ya hay una ejecución en marcha: solo hay un ratón.")
-    return ejecucion.resumen()
+
+    def trabajo(ejecucion: Ejecucion) -> None:
+        ejecucion.emitir("inicio", modo="robot", titulo=flujo["titulo"], total=len(flujo["pasos"]))
+        if reproductor.reproducir(flujo, ejecucion.detener) == "detenida":
+            ejecucion.estado = "detenida"
+
+    return _lanzar("robot", trabajo)
 
 
 class PeticionAgente(BaseModel):
@@ -83,12 +108,19 @@ class PeticionAgente(BaseModel):
 
 @app.post("/ejecuciones/agente")
 def ejecutar_agente(peticion: PeticionAgente):
-    # el agente sigue en el notebook de experimentos; se enchufa aqui cuando este listo
-    raise HTTPException(
-        501,
-        "El agente todavía no está conectado a la plataforma: de momento vive en el "
-        "notebook de experimentos.",
-    )
+    prompt = peticion.prompt.strip()
+    if not prompt:
+        raise HTTPException(422, "El prompt está vacío.")
+
+    def trabajo(ejecucion: Ejecucion) -> None:
+        ejecucion.emitir("inicio", modo="agente")
+        resultado = sesion.ejecutar_agente(prompt, ejecucion.detener)
+        if resultado["detenido"]:
+            ejecucion.estado = "detenida"
+        elif not resultado["completado"]:
+            ejecucion.estado = "error"
+
+    return _lanzar("agente", trabajo)
 
 
 @app.post("/ejecuciones/{id_ejecucion}/detener")

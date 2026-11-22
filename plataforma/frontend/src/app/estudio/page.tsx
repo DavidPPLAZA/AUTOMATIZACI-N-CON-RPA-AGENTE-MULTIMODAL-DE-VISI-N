@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import { Cpu, Eye, Play, RotateCcw, Unplug } from "lucide-react";
 import { api, ErrorApi } from "@/lib/api";
 import { Boton, Etiqueta, Tarjeta, TituloSeccion } from "@/components/ui";
+import MenteAgente from "@/components/MenteAgente";
 
 export default function Estudio() {
   const [ejemplo, setEjemplo] = useState("");
   const [prompt, setPrompt] = useState("");
   const [aviso, setAviso] = useState<string | null>(null);
   const [lanzando, setLanzando] = useState(false);
+  const [ejecucion, setEjecucion] = useState<string | null>(null);
 
   useEffect(() => {
     api
@@ -19,13 +21,21 @@ export default function Estudio() {
         setPrompt((actual) => actual || prompt);
       })
       .catch((e: ErrorApi) => setAviso(e.message));
+    // si el agente ya estaba trabajando (p.ej. se recargo la pagina), engancharse
+    api
+      .estado()
+      .then(({ ejecucion_activa }) => {
+        if (ejecucion_activa?.modo === "agente") setEjecucion(ejecucion_activa.id);
+      })
+      .catch(() => {});
   }, []);
 
   async function lanzar() {
     setLanzando(true);
     setAviso(null);
     try {
-      await api.lanzarAgente(prompt);
+      const e = await api.lanzarAgente(prompt);
+      setEjecucion(e.id);
     } catch (e) {
       setAviso((e as ErrorApi).message);
     } finally {
@@ -83,16 +93,20 @@ export default function Estudio() {
         )}
       </Tarjeta>
 
-      <Tarjeta className="flex flex-col items-center gap-2 py-10 text-center">
-        <span className="grid h-12 w-12 place-items-center rounded-2xl border border-borde-2 bg-panel text-tenue">
-          <Eye size={20} />
-        </span>
-        <p className="text-sm font-medium">Mente del agente</p>
-        <p className="max-w-sm text-xs text-tenue">
-          Aquí verás en tiempo real cada herramienta que usa el agente, sus verificaciones y
-          correcciones. Mientras tanto, GestCorp 98 se moverá sola en la otra mitad de la pantalla.
-        </p>
-      </Tarjeta>
+      {ejecucion ? (
+        <MenteAgente key={ejecucion} id={ejecucion} />
+      ) : (
+        <Tarjeta className="flex flex-col items-center gap-2 py-10 text-center">
+          <span className="grid h-12 w-12 place-items-center rounded-2xl border border-borde-2 bg-panel text-tenue">
+            <Eye size={20} />
+          </span>
+          <p className="text-sm font-medium">Mente del agente</p>
+          <p className="max-w-sm text-xs text-tenue">
+            Aquí verás en tiempo real cada herramienta que usa el agente, sus verificaciones y
+            correcciones. Mientras tanto, GestCorp 98 se moverá sola en la otra mitad de la pantalla.
+          </p>
+        </Tarjeta>
+      )}
     </div>
   );
 }
