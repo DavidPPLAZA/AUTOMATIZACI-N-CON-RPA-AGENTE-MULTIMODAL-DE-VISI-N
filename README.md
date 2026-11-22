@@ -2,7 +2,7 @@
 
 # 🦥 Automatizando la automatización
 
-### Un agente con **ojos** y **manos** que aprende un proceso viéndolo hacer… y lo convierte en un robot RPA determinista.
+### Un agente con **ojos** y **manos** al que explicas la tareas, lo hace y lo convierte en un robot RPA determinista.
 
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
 ![uv](https://img.shields.io/badge/uv-gestor-DE5FE9)
