@@ -61,39 +61,49 @@ Windows. Esta lista crecerá a medida que se construyan las piezas 3 y 4.
 
 - [x] `chore:` inicializar proyecto con `uv`, `pyproject.toml`, `.gitignore`
 - [x] `docs:` añadir `PROJECT.md` y `CLAUDE.md`
-- [ ] `feat:` capa de datos SQLite (esquema `clientes` / `pedidos` / `facturas`) + seed de
+- [x] `feat:` capa de datos SQLite (esquema `clientes` / `pedidos` / `facturas`) + seed de
       datos de prueba
-- [ ] `feat:` ventana de login de GestCorp 98
-- [ ] `feat:` ventana principal con `Notebook` y las 4 pestañas vacías
-- [ ] `feat:` pestaña Clientes (listar + alta)
-- [ ] `feat:` pestaña Pedidos (listar + crear pedido)
-- [ ] `feat:` pestaña Facturación (listado, solo lectura por ahora)
-- [ ] `feat:` pestaña Informes (mostrar un dato calculado, p. ej. total de ventas)
+- [x] `feat:` ventana de login de GestCorp 98
+- [x] `feat:` ventana principal con `Notebook` y las 4 pestañas
+- [x] `feat:` pestaña Clientes (listar + alta + borrar con clic derecho)
+- [x] `feat:` pestaña Pedidos (listar + crear pedido + borrar con clic derecho)
+- [x] `feat:` pestaña Facturación (listado, solo lectura por ahora)
+- [x] `feat:` pestaña Informes (mostrar un dato calculado, p. ej. total de ventas)
 
 > Hueco reservado para más adelante: paquete `gestcorp98/chaos/` con un "modo caos" para
 > poner a prueba la robustez del pipeline de automatización. No se crea nada todavía.
 
-### Fase 2 — Agente de visión / grounding (EN CURSO, en `experiments/`)
+### Fase 2 — Agente de visión / grounding (HECHA: UI-TARS, en `experiments/`)
 
 - [x] Evaluar qwen2.5vl:7b (Ollama) sobre los 3 enfoques de prompt — descartado: ancla su
       propio formato de coordenadas y no responde fiable a instrucciones de unidad
 - [x] Evaluar RapidOCR — buen baseline para botones, insuficiente solo para campos vacíos
 - [x] Evaluar el detector YOLOv8 de OmniParser — cajas muy precisas, incluso en vacíos
-- [ ] Combinar detector de OmniParser + emparejamiento por texto de RapidOCR (sin Florence-2,
-      sin VLM pesado) y medir contra el ground truth
-- [ ] Si hiciera falta, evaluar alternativas más pesadas: Molmo-7B-D, UI-TARS (7B y/o 2B),
-      ShowUI-2B
-- [ ] Elegir el enfoque ganador y extraerlo como herramienta de visión reutilizable (no solo
-      del notebook de experimentos)
+- [x] Evaluar UI-TARS-7B-DPO — **elegido**: localiza muy bien (coordenadas en escala 0-1000
+      sobre la imagen original) y además responde preguntas sobre la pantalla, lo que sirve
+      para verificar
+- [ ] ~~Combinar detector de OmniParser + RapidOCR~~ — no hizo falta tras UI-TARS
+- [x] Extraer el enfoque ganador como herramienta reutilizable: `experiments/vision_tools.py`
+      (localizar, preguntar, captura limitada a la ventana, siempre en GPU)
 
-### Fase 3 — Intérprete de flujos en lenguaje natural (NO tocar aún)
+### Fase 3 — Intérprete de flujos en lenguaje natural (PROTOTIPO en `experiments/agentic_pipeline.ipynb`)
+
+> Hoy el propio agente orquestador (gpt-oss-120b en Groq + tools) interpreta la instrucción en
+> texto y la ejecuta paso a paso; no hay todavía una fase separada que la convierta en una lista
+> de pasos editable. Lo aprendido está en
+> [`docs/aprendizajes-agente-rpa.md`](./docs/aprendizajes-agente-rpa.md).
 
 - [ ] Transcripción de audio a texto (si el input es audio)
 - [ ] Parseo de la explicación en lenguaje natural a una lista estructurada de pasos
       (acción, descripción del elemento objetivo, verificación esperada)
 - [ ] Validación/edición de esos pasos por el usuario antes de generar código
 
-### Fase 4 — Agente generador y verificador de código RPA (NO tocar aún)
+### Fase 4 — Agente generador y verificador de código RPA (PROTOTIPO en `experiments/agentic_pipeline.ipynb`)
+
+> Conseguido el 2026-11-22: el agente ejecuta el flujo completo (login → alta de cliente →
+> pedido con desplegables) con tools deterministas, **verifica cada formulario** (UI-TARS lee,
+> Python compara) y se autocorrige; de su grabación sale un flujo JSON
+> (`experiments/flujos/`) que se reproduce con RPA puro, sin IA. Falta lo de abajo.
 
 - [ ] Grafo LangGraph: por paso, generar código → ejecutar → verificar con el agente de
       visión (fase 2) → si falla, diagnosticar y corregir el propio código → reintentar
@@ -103,9 +113,13 @@ Windows. Esta lista crecerá a medida que se construyan las piezas 3 y 4.
 - [ ] Empaquetar el flujo verificado como ejecutable reutilizable + generación del informe
       pedido por el usuario
 
-### Fase 5 — Plataforma / web de gestión (NO tocar aún)
+### Fase 5 — Plataforma / web de gestión (V1 en `plataforma/`: FastAPI + Next.js)
 
-- [ ] Backend FastAPI + WebSocket: subir una explicación de flujo (texto o audio)
+> Hecho: la web lista los robots grabados y los ejecuta en directo (WebSocket). Falta conectar el
+> agente (hoy vive en el notebook).
+
+- [x] Backend FastAPI + WebSocket (ejecución de robots en directo)
+- [ ] Subir una explicación de flujo (texto o audio) y lanzar el agente desde la web
 - [ ] Streaming en directo de la generación/verificación del flujo (pantalla + clics + pasos)
 - [ ] Aprobar/rechazar pasos o código generado desde la web
 - [ ] Gestión de automatizaciones ya generadas: lanzar, ver historial, ver informes
