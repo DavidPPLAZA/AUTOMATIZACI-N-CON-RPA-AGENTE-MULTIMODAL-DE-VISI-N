@@ -20,6 +20,7 @@ dependencies = [
     "pillow>=13.0.0",
     "pyautogui>=0.9.54",
     "pygetwindow>=0.0.9",
+    "pyperclip>=1.11.0",
     "python-dotenv>=1.2.4",
     "rapidocr-onnxruntime>=1.4.4",
     "timm>=1.0.31",

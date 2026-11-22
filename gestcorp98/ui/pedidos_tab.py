@@ -34,11 +34,17 @@ class PedidosTab(ttk.Frame):
         form.pack(fill="x", padx=8, pady=(0, 8))
 
         ttk.Label(form, text="Cliente:").grid(row=0, column=0, sticky="e", padx=4, pady=4)
-        self.cliente_combo = ttk.Combobox(form, state="readonly", width=28)
+        # postcommand: se ejecuta justo antes de desplegar la lista, para que
+        # aparezcan los clientes dados de alta despues de arrancar la app
+        self.cliente_combo = ttk.Combobox(
+            form, state="readonly", width=28, postcommand=self._load_combos
+        )
         self.cliente_combo.grid(row=0, column=1, padx=4, pady=4)
 
         ttk.Label(form, text="Producto:").grid(row=0, column=2, sticky="e", padx=4, pady=4)
-        self.producto_combo = ttk.Combobox(form, state="readonly", width=28)
+        self.producto_combo = ttk.Combobox(
+            form, state="readonly", width=28, postcommand=self._load_combos
+        )
         self.producto_combo.grid(row=0, column=3, padx=4, pady=4)
 
         ttk.Label(form, text="Cantidad:").grid(row=0, column=4, sticky="e", padx=4, pady=4)
