@@ -135,25 +135,32 @@ nada de su código. Solo ve píxeles, igual que vería SAP, un CRM antiguo o cua
 ### 4.2 🔬 Experimentos: cómo se eligió el modelo de visión
 
 Antes de construir el agente había que responder a una pregunta: **¿qué modelo localiza mejor un
-elemento de UI a partir de su descripción, incluidos los campos vacíos?** Se montó un **ground
-truth** real (`experiments/ground_truth/`: 3 capturas de GestCorp y las coordenadas reales de 7
-elementos) y se compararon los candidatos en `experiments/vision_evaluation.ipynb`. En cada imagen,
-🟢 es la posición real y 🔴 la predicción.
+elemento de UI a partir de su descripción, incluidos los campos vacíos?**
 
-| Enfoque | Resultado | Veredicto |
-|---|---|---|
-| **qwen2.5vl:7b** (Ollama) | Usa su propio formato de coordenadas y no se sabe a qué resolución redimensionó la imagen | ❌ Descartado |
-| **RapidOCR** | Muy bueno con botones con texto; inútil para campos vacíos. Para *leer* campos, falla (`"seon]"` donde ponía `"Lucas"`) | ⚠️ Baseline |
-| **OmniParser v2** (YOLOv8 + Florence-2) | El detector saca cajas precisísimas, incluso en campos vacíos, pero el captioner no sabe **qué caja es cuál** | ⚠️ Detector top, identificación floja |
-| **UI-TARS-7B-DPO** | Localiza muy bien **y además responde preguntas sobre la pantalla**, así que sirve también para **verificar** | 🏆 **Elegido** |
+Para responderla, en `experiments/vision_evaluation.ipynb` se le pasan a cada modelo 3 capturas de
+GestCorp (`experiments/ground_truth/`) y se le pide que encuentre 7 elementos: campos, botones y el
+botón de un popup. Por cada uno se genera una **imagen etiquetada**: 🟢 dónde está de verdad y 🔴
+dónde dice el modelo que está. **La decisión se tomó mirando esas imágenes**, viendo qué devuelve
+cada modelo y dónde se queda corto.
+
+| Modelo | Qué hace bien | Su límite | Veredicto |
+|---|---|---|---|
+| **RapidOCR** | Localiza muy bien lo que **tiene texto**: botones, etiquetas | **No ve los huecos vacíos**: en un campo para rellenar solo encuentra la etiqueta de al lado. No sirve para saber dónde escribir | ❌ |
+| **OmniParser v2** (YOLOv8 + Florence-2) | Su detector **encuentra bien todos los elementos**, incluso los campos vacíos | **Te los devuelve todos**: quedarte con el campo concreto exige cribar, y su descripción de cada caja no lo resuelve | ❌ |
+| **UI-TARS-7B-DPO** | Le dices **qué buscas** y te da **directamente sus coordenadas**. Además **responde preguntas sobre la imagen** | Pesa ~16 GB y necesita GPU | 🏆 **Elegido** |
+
+**UI-TARS era justo lo que buscábamos:** el punto concreto de un elemento a partir de su descripción,
+**sin tener que cribar**. Que además responda preguntas sobre la pantalla es lo que después permitió
+que el agente **verifique** su propio trabajo.
 
 <div align="center">
 
 | RapidOCR | OmniParser | UI-TARS |
 |:---:|:---:|:---:|
-| <img src="experiments/vision_evaluation/rapidocr/02_alta_cliente__nif_field.png" width="260"> | <img src="experiments/vision_evaluation/omniparser/02_alta_cliente__nif_field.png" width="260"> | <img src="experiments/vision_evaluation/uitars/02_alta_cliente__nif_field.png" width="260"> |
+| <img src="experiments/vision_evaluation/rapidocr/02_alta_cliente__nif_field.png" width="260"> | <img src="experiments/vision_evaluation/omniparser/02_alta_cliente__todas_las_cajas.png" width="260"> | <img src="experiments/vision_evaluation/uitars/02_alta_cliente__nif_field.png" width="260"> |
+| Encuentra la etiqueta "NIF:", no el campo | Encuentra **todas** las cajas: ¿cuál es el NIF? | Directo al campo NIF |
 
-*Localizar el campo **vacío** "NIF" del formulario de alta.*
+*Buscando el campo **vacío** "NIF" del formulario de alta.*
 
 </div>
 
