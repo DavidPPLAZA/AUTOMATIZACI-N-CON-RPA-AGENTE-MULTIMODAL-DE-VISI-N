@@ -65,6 +65,24 @@ def insert_cliente(conn: sqlite3.Connection, *, nombre, nif, email, telefono, ci
     conn.commit()
 
 
+def count_pedidos_cliente(conn: sqlite3.Connection, cliente_id: int) -> int:
+    return conn.execute(
+        "SELECT COUNT(*) FROM pedidos WHERE cliente_id = ?", (cliente_id,)
+    ).fetchone()[0]
+
+
+def delete_cliente(conn: sqlite3.Connection, cliente_id: int) -> None:
+    """Borra el cliente y, en cascada, sus pedidos y las facturas de esos
+    pedidos (si no, quedarian pedidos de un cliente que ya no existe)."""
+    conn.execute(
+        "DELETE FROM facturas WHERE pedido_id IN (SELECT id FROM pedidos WHERE cliente_id = ?)",
+        (cliente_id,),
+    )
+    conn.execute("DELETE FROM pedidos WHERE cliente_id = ?", (cliente_id,))
+    conn.execute("DELETE FROM clientes WHERE id = ?", (cliente_id,))
+    conn.commit()
+
+
 def list_productos(conn: sqlite3.Connection):
     return conn.execute("SELECT * FROM productos ORDER BY nombre").fetchall()
 
@@ -94,6 +112,13 @@ def insert_pedido(conn: sqlite3.Connection, *, cliente_id, producto_id, cantidad
         "VALUES (?, ?, ?, ?, 'Pendiente')",
         (cliente_id, producto_id, cantidad, date.today().isoformat()),
     )
+    conn.commit()
+
+
+def delete_pedido(conn: sqlite3.Connection, pedido_id: int) -> None:
+    """Borra el pedido y su factura, si la tiene."""
+    conn.execute("DELETE FROM facturas WHERE pedido_id = ?", (pedido_id,))
+    conn.execute("DELETE FROM pedidos WHERE id = ?", (pedido_id,))
     conn.commit()
 
 

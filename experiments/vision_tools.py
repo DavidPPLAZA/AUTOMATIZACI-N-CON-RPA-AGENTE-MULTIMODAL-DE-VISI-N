@@ -23,8 +23,13 @@ def _load_uitars():
 
         model_id = "ByteDance-Seed/UI-TARS-7B-DPO"
         _uitars_processor = AutoProcessor.from_pretrained(model_id)
+        if not torch.cuda.is_available():
+            raise RuntimeError("UI-TARS necesita GPU y torch no ve ninguna (CUDA no disponible)")
+        # "cuda:0" y no "auto": con "auto", si la VRAM no llega, accelerate manda
+        # capas a la CPU sin avisar y cada inferencia pasa a ser lentisima. Asi,
+        # o cabe entero en la GPU o falla con un error claro.
         _uitars_model = Qwen2VLForConditionalGeneration.from_pretrained(
-            model_id, torch_dtype=torch.bfloat16, device_map="auto"
+            model_id, torch_dtype=torch.bfloat16, device_map="cuda:0"
         )
     return _uitars_model, _uitars_processor
 
@@ -36,7 +41,12 @@ def precargar_modelo_vision() -> None:
     modelo justo en medio de la automatizacion.
     """
     model, _ = _load_uitars()
-    print(f"UI-TARS cargado en: {model.device}")
+    dispositivos = {str(p.device) for p in model.parameters()}
+    vram = torch.cuda.memory_allocated(0) / 2**30
+    print(
+        f"UI-TARS cargado en: {', '.join(sorted(dispositivos))} "
+        f"({torch.cuda.get_device_name(0)}, {vram:.1f} GB de VRAM ocupados)"
+    )
 
 
 def _generate_uitars(image: Image.Image, prompt_text: str, max_new_tokens: int = 128) -> str:

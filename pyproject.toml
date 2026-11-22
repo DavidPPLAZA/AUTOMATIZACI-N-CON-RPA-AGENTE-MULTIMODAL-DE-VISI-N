@@ -9,6 +9,7 @@ requires-python = ">=3.12"
 dependencies = [
     "accelerate>=1.15.0",
     "einops>=0.8.2",
+    "fastapi>=0.165.0",
     "httpx>=0.28.1",
     "ipykernel>=7.4.0",
     "jupyter>=1.1.1",
@@ -28,6 +29,7 @@ dependencies = [
     "torchvision>=0.29.2",
     "transformers==4.49.0",
     "ultralytics>=8.4.212",
+    "uvicorn[standard]>=0.54.0",
 ]
 
 [[tool.uv.index]]
