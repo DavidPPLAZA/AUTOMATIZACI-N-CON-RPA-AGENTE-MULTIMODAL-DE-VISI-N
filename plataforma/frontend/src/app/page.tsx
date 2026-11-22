@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ArrowRight, Bot, Eye, FileJson, MessageSquareText, MousePointerClick, ShieldCheck } from "lucide-react";
 import { Tarjeta } from "@/components/ui";
+import Robot3D from "@/components/robot3d/Robot3D";
+import BotonTurbo from "@/components/robot3d/BotonTurbo";
 
 const PASOS = [
   {
@@ -30,11 +32,12 @@ const PILARES = [
 export default function Portada() {
   return (
     <div className="flex flex-col gap-16 py-6">
-      <section className="aparecer flex flex-col items-start gap-6 pt-6">
+      <section className="grid items-center gap-4 pt-2 md:grid-cols-[1.05fr_1fr] md:gap-2">
+        <div className="aparecer flex min-w-0 flex-col items-start gap-6 md:pt-4">
         <span className="rounded-full border border-borde-2 bg-panel px-3 py-1 text-xs text-tenue">
           Agente · RPA · Visión
         </span>
-        <h1 className="text-5xl font-semibold leading-[1.05] tracking-tight sm:text-6xl">
+        <h1 className="text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl lg:text-7xl">
           <span className="texto-degradado">Automatizando</span>
           <br />
           la automatización
@@ -45,12 +48,12 @@ export default function Portada() {
           <span className="text-texto">auditables</span>.
         </p>
         <div className="flex flex-wrap gap-3">
-          <Link
+          <BotonTurbo
             href="/estudio"
             className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violeta to-cian px-5 py-3 text-sm font-medium text-white shadow-[0_8px_30px_-8px] shadow-violeta/60 transition hover:brightness-110"
           >
             Crear automatización <ArrowRight size={16} />
-          </Link>
+          </BotonTurbo>
           <Link
             href="/robots"
             className="inline-flex items-center gap-2 rounded-xl border border-borde-2 bg-panel px-5 py-3 text-sm font-medium transition hover:bg-panel-2"
@@ -58,12 +61,16 @@ export default function Portada() {
             <Bot size={16} /> Ver robots
           </Link>
         </div>
+        </div>
+        <div className="order-first mx-auto w-full max-w-md min-w-0 md:order-none md:max-w-none">
+          <Robot3D />
+        </div>
       </section>
 
-      <section className="flex flex-col gap-3">
+      <section className="grid gap-3 md:grid-cols-3">
         {PASOS.map(({ icono: Icono, titulo, texto }, i) => (
           <div key={titulo} className="aparecer" style={{ animationDelay: `${150 + i * 120}ms` }}>
-            <Tarjeta className="flex items-start gap-4">
+            <Tarjeta className="flex h-full items-start gap-4">
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-violeta/15 text-violet-300">
                 <Icono size={18} />
               </span>
@@ -81,7 +88,7 @@ export default function Portada() {
 
       <section>
         <h2 className="mb-4 text-sm font-medium uppercase tracking-widest text-tenue">Cómo funciona</h2>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {PILARES.map(({ icono: Icono, titulo, texto }) => (
             <div key={titulo} className="rounded-2xl border border-borde bg-panel p-4">
               <Icono size={18} className="text-cian" />

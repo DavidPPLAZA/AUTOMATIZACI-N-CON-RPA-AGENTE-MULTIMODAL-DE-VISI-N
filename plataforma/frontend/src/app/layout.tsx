@@ -30,8 +30,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <Suspense fallback={<div className="h-14 border-b border-borde" />}>
           <Cabecera />
         </Suspense>
-        <main className="flex-1 w-full max-w-3xl mx-auto px-5 py-8">{children}</main>
-        <footer className="w-full max-w-3xl mx-auto px-5 py-6 text-xs text-tenue">
+        <main className="flex-1 w-full max-w-6xl mx-auto px-5 py-8">{children}</main>
+        <footer className="w-full max-w-6xl mx-auto px-5 py-6 text-xs text-tenue">
           Agente + RPA + Visión · banco de pruebas: GestCorp 98
         </footer>
       </body>

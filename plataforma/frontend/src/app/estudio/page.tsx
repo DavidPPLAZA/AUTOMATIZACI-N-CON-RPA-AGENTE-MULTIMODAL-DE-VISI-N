@@ -34,7 +34,7 @@ export default function Estudio() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
       <TituloSeccion
         titulo="Estudio"
         subtitulo="Describe el proceso. El agente lo ejecuta en GestCorp 98 y lo convierte en un robot."

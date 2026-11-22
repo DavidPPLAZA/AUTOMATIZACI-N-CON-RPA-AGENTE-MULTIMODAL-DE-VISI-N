@@ -14,7 +14,7 @@ export default function Cabecera() {
   const ruta = usePathname();
   return (
     <header className="sticky top-0 z-20 border-b border-borde bg-fondo/70 backdrop-blur-md">
-      <div className="max-w-3xl mx-auto px-5 h-14 flex items-center justify-between">
+      <div className="max-w-6xl mx-auto px-5 h-14 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5 font-semibold tracking-tight">
           <Logo />
           <span className="hidden sm:inline">

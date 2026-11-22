@@ -15,7 +15,7 @@ export default function Robots() {
   }, []);
 
   return (
-    <div>
+    <div className="mx-auto w-full max-w-3xl">
       <TituloSeccion
         titulo="Robots"
         subtitulo="Flujos RPA generados por el agente. Se ejecutan sin IA, siempre igual."

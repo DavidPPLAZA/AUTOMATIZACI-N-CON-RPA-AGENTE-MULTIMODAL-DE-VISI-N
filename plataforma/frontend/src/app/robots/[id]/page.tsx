@@ -5,7 +5,7 @@ import DetalleRobot from "@/components/DetalleRobot";
 // dentro de Suspense (lo exige Next con cacheComponents activado).
 export default function Page() {
   return (
-    <Suspense fallback={<div className="h-40 animate-pulse rounded-2xl bg-panel" />}>
+    <Suspense fallback={<div className="mx-auto h-40 w-full max-w-3xl animate-pulse rounded-2xl bg-panel" />}>
       <DetalleRobot />
     </Suspense>
   );
