@@ -13,8 +13,7 @@
 ![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)
 ![Three.js](https://img.shields.io/badge/Three.js-R3F-049EF4?logo=threedotjs&logoColor=white)
 
-<img src="imagen%20y%20demo/interfaz%20para%20el%20readme.png" alt="Landing de la plataforma" width="820">
-
+<img src="imagen%20y%20demo/interfaz-readme-v2.png" alt="Landing de la plataforma" width="820">
 **[▶️ Ver la demo completa en vídeo](imagen%20y%20demo/demo.mp4)**: del prompt en lenguaje natural al robot RPA, sin tocar una línea de código.
 
 </div>
